@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
 import { projectApi } from '../services/api';
-import type { SegmentBoundary, FeedbackEntry } from '../types';
 
-interface FeedbackInputProps {
-  projectId: string;
-  currentTime: number;
-  segmentBoundaries: SegmentBoundary[];
-  onFeedbackSubmitted: (feedback: FeedbackEntry) => void;
-}
-
-const FeedbackInput: React.FC<FeedbackInputProps> = ({
+const FeedbackInput = ({
   projectId,
   currentTime,
   segmentBoundaries,
@@ -23,7 +15,7 @@ const FeedbackInput: React.FC<FeedbackInputProps> = ({
     (seg) => currentTime >= seg.start && currentTime <= seg.end
   );
 
-  const formatTime = (seconds: number): string => {
+  const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${String(s).padStart(2, '0')}`;
@@ -48,7 +40,7 @@ const FeedbackInput: React.FC<FeedbackInputProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       handleSubmit();
     }
@@ -97,7 +89,7 @@ const FeedbackInput: React.FC<FeedbackInputProps> = ({
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     background: 'rgba(10,10,10,0.7)',
     border: '1px solid rgba(255,255,255,0.1)',

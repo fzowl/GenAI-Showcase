@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProjectList from './pages/ProjectList';
 import ProjectWorkspace from './pages/ProjectWorkspace';
 
-const App: React.FC = () => {
+function App() {
   return (
     <BrowserRouter>
       <Routes>
@@ -12,6 +12,6 @@ const App: React.FC = () => {
       </Routes>
     </BrowserRouter>
   );
-};
+}
 
 export default App;

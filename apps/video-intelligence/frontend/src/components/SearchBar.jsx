@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { projectApi } from '../services/api';
-import type { SearchResult } from '../types';
 
-interface SearchBarProps {
-  projectId: string;
-  onResultSelect: (result: SearchResult) => void;
-}
-
-const SearchBar: React.FC<SearchBarProps> = ({ projectId, onResultSelect }) => {
+const SearchBar = ({ projectId, onResultSelect }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!query.trim() || loading) return;
 
@@ -27,7 +21,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ projectId, onResultSelect }) => {
     }
   };
 
-  const formatTime = (seconds: number): string => {
+  const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${String(s).padStart(2, '0')}`;
@@ -70,7 +64,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ projectId, onResultSelect }) => {
                 alt={result.description}
                 style={styles.thumb}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
+                  e.target.style.display = 'none';
                 }}
               />
               <div style={styles.thumbOverlay}>
@@ -88,7 +82,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ projectId, onResultSelect }) => {
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   form: {
     display: 'flex',
     gap: 12,

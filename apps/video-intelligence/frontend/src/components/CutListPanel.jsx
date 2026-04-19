@@ -1,29 +1,19 @@
 import React, { useState } from 'react';
 import { projectApi } from '../services/api';
-import type { SuggestedClip, SuggestedCaption, ConflictInfo } from '../types';
 
-interface CutListPanelProps {
-  projectId: string;
-  cuts: SuggestedClip[];
-  conflicts: ConflictInfo[];
-  isRegenerating: boolean;
-  onCutUpdated: (clipId: string, updates: Partial<SuggestedClip>) => void;
-  onSeekTo: (time: number) => void;
-}
-
-const formatTime = (seconds: number): string => {
+const formatTime = (seconds) => {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
 };
 
-const statusColors: Record<string, { bg: string; text: string; border: string }> = {
+const statusColors = {
   pending: { bg: 'rgba(113,113,122,0.15)', text: '#a1a1aa', border: '#71717a' },
   approved: { bg: 'rgba(34,197,94,0.15)', text: '#4ade80', border: '#22c55e' },
   rejected: { bg: 'rgba(239,68,68,0.15)', text: '#f87171', border: '#ef4444' },
 };
 
-const CutListPanel: React.FC<CutListPanelProps> = ({
+const CutListPanel = ({
   projectId,
   cuts,
   conflicts,
@@ -31,26 +21,20 @@ const CutListPanel: React.FC<CutListPanelProps> = ({
   onCutUpdated,
   onSeekTo,
 }) => {
-  const [editingCaptions, setEditingCaptions] = useState<
-    Record<string, Partial<SuggestedCaption>>
-  >({});
+  const [editingCaptions, setEditingCaptions] = useState({});
 
-  const handleCaptionChange = (
-    clipId: string,
-    field: keyof SuggestedCaption,
-    value: string
-  ) => {
+  const handleCaptionChange = (clipId, field, value) => {
     setEditingCaptions((prev) => ({
       ...prev,
       [clipId]: { ...prev[clipId], [field]: value },
     }));
   };
 
-  const handleCaptionBlur = async (clip: SuggestedClip, field: keyof SuggestedCaption) => {
+  const handleCaptionBlur = async (clip, field) => {
     const edits = editingCaptions[clip.clip_id];
     if (!edits || edits[field] === undefined) return;
 
-    const newCaption: SuggestedCaption = {
+    const newCaption = {
       ...clip.suggested_caption,
       ...edits,
     };
@@ -73,10 +57,7 @@ const CutListPanel: React.FC<CutListPanelProps> = ({
     });
   };
 
-  const handleStatusChange = async (
-    clipId: string,
-    status: 'approved' | 'rejected'
-  ) => {
+  const handleStatusChange = async (clipId, status) => {
     try {
       await projectApi.updateClipStatus(projectId, clipId, status);
       onCutUpdated(clipId, { status });
@@ -85,15 +66,12 @@ const CutListPanel: React.FC<CutListPanelProps> = ({
     }
   };
 
-  const getCaptionValue = (
-    clip: SuggestedClip,
-    field: keyof SuggestedCaption
-  ): string => {
+  const getCaptionValue = (clip, field) => {
     const editing = editingCaptions[clip.clip_id];
     if (editing && editing[field] !== undefined) {
-      return editing[field] as string;
+      return editing[field];
     }
-    return (clip.suggested_caption[field] as string) || '';
+    return clip.suggested_caption[field] || '';
   };
 
   return (
@@ -162,7 +140,7 @@ const CutListPanel: React.FC<CutListPanelProps> = ({
                       alt="clip thumbnail"
                       style={styles.thumb}
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                        e.target.style.display = 'none';
                       }}
                     />
                   ) : (
@@ -282,7 +260,7 @@ const CutListPanel: React.FC<CutListPanelProps> = ({
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     background: 'rgba(10,10,10,0.7)',
     border: '1px solid rgba(255,255,255,0.1)',

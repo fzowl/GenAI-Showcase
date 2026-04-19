@@ -1,14 +1,6 @@
 import React from 'react';
-import type { FeedbackEntry, ConflictInfo } from '../types';
 
-interface FeedbackPanelProps {
-  feedback: FeedbackEntry[];
-  currentTime: number;
-  conflicts: ConflictInfo[];
-  onSeek?: (time: number) => void;
-}
-
-const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
+const FeedbackPanel = ({
   feedback,
   currentTime,
   conflicts,
@@ -20,7 +12,7 @@ const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   );
 
   // Check if a feedback entry is in a conflict zone
-  const isConflict = (fb: FeedbackEntry): boolean => {
+  const isConflict = (fb) => {
     return (conflicts || []).some((c) => {
       const conflictTime = parseFloat(c.timestamp);
       return (
@@ -31,7 +23,7 @@ const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
     });
   };
 
-  const formatTime = (seconds: number): string => {
+  const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${String(s).padStart(2, '0')}`;
@@ -109,7 +101,7 @@ const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     background: 'rgba(10,10,10,0.7)',
     border: '1px solid rgba(255,255,255,0.1)',

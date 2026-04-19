@@ -184,7 +184,7 @@ Create `CLAUDE.md` at project root with:
 - [ ] All 10 demo steps verified end-to-end
 - [ ] DEMO_FALLBACK_MODE works — demo runs without any API keys
 - [ ] Target latencies met (project load <1s, search <2s, regen <5s)
-- [ ] No TypeScript errors in frontend build
+- [ ] No errors in frontend build
 - [ ] No Python import errors in backend
 - [ ] Backend starts cleanly: `uvicorn main:app`
 - [ ] Frontend starts cleanly: `npm start`

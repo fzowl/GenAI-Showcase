@@ -1,13 +1,6 @@
 import React from 'react';
-import type { StyleMemory, ProjectMemory } from '../types';
 
-interface MemorySidebarProps {
-  styleMemory?: StyleMemory;
-  projectMemory?: ProjectMemory;
-  isLoading: boolean;
-}
-
-const MemorySidebar: React.FC<MemorySidebarProps> = ({
+const MemorySidebar = ({
   styleMemory,
   projectMemory,
   isLoading,
@@ -157,7 +150,7 @@ const MemorySidebar: React.FC<MemorySidebarProps> = ({
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     background: 'rgba(10,10,10,0.7)',
     border: '1px solid rgba(255,255,255,0.1)',

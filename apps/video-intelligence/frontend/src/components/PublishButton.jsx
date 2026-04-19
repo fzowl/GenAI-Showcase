@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
 import { projectApi } from '../services/api';
-import type { SuggestedClip } from '../types';
 
-interface PublishButtonProps {
-  projectId: string;
-  cuts: SuggestedClip[];
-  onPublished: () => void;
-}
-
-const PublishButton: React.FC<PublishButtonProps> = ({
+const PublishButton = ({
   projectId,
   cuts,
   onPublished,
 }) => {
   const [publishing, setPublishing] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState(null);
 
   const approvedClips = (cuts || []).filter((c) => c.status === 'approved');
   const disabled = approvedClips.length === 0 || publishing;
@@ -62,7 +55,7 @@ const PublishButton: React.FC<PublishButtonProps> = ({
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     position: 'relative',
   },

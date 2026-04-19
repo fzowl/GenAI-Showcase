@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { projectApi } from '../services/api';
-import type { Project } from '../types';
 
-const statusColors: Record<Project['status'], { bg: string; text: string; label: string }> = {
+const statusColors = {
   published: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e', label: 'Published' },
   in_progress: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6', label: 'In Progress' },
   draft: { bg: 'rgba(161, 161, 170, 0.15)', text: '#a1a1aa', label: 'Draft' },
 };
 
-const ProjectList: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
+const ProjectList = () => {
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -125,7 +124,7 @@ const ProjectList: React.FC = () => {
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   page: {
     minHeight: '100vh',
     padding: '40px 20px',

@@ -50,7 +50,7 @@ Phase 3: Search + Agents (after Phase 2)
   └── Agent E: LangGraph Agents      ──→ Social Agent, feedback, publish, HITL (parallel with D)
 
 Phase 4: Frontend (after Phases 2-3 backends ready)
-  ├── Agent F: Pages + Core          ──→ TypeScript setup, pages, search, video, feedback display
+  ├── Agent F: Pages + Core          ──→ JavaScript setup, pages, search, video, feedback display
   └── (G waits for F)
   └── Agent G: Editor Components     ──→ feedback input, style upload, cut list, publish, memory
 
@@ -62,7 +62,7 @@ Phase 5: Integration (after ALL above)
 - **B + C** can run in parallel (both depend only on A)
 - **D + E** can run in parallel (both depend on A + B)
 - **F can start** as soon as B is done (needs API endpoints, not agent layer)
-- **G** must wait for F (needs TypeScript types and layout)
+- **G** must wait for F (needs API service and layout)
 - **H** must be last (needs everything)
 
 ---
@@ -84,7 +84,7 @@ Also read these context files for background:
 - KARPATHY.md (coding guidelines: simplicity first, surgical changes)
 
 Key constraints:
-- Frontend must be TypeScript only (.tsx/.ts), no JavaScript
+- Frontend uses JavaScript (.js/.jsx) for cleaner diffs against upstream
 - Follow KARPATHY.md: minimum code, no speculative features
 - Pin dependencies exactly as specified
 
@@ -105,7 +105,7 @@ Execute all tasks in the spec and verify against the acceptance criteria.`
 | C | `.claude/agents/agent-c-audio-video.md` | Audio extraction, STT, transcript summaries |
 | D | `.claude/agents/agent-d-search-style.md` | Search + reranking, style reference |
 | E | `.claude/agents/agent-e-langgraph-agents.md` | LangGraph Social Agent, feedback, publish |
-| F | `.claude/agents/agent-f-frontend-core.md` | TypeScript setup, pages, core components |
+| F | `.claude/agents/agent-f-frontend-core.md` | JavaScript setup, pages, core components |
 | G | `.claude/agents/agent-g-frontend-editor.md` | Editor components (feedback, cuts, publish, memory) |
 | H | `.claude/agents/agent-h-integration.md` | Integration, DEMO_FALLBACK_MODE, e2e test |
 
@@ -123,7 +123,7 @@ Execute all tasks in the spec and verify against the acceptance criteria.`
 
 ## Global Constraints (apply to ALL sub-agents)
 
-1. **TypeScript only** for frontend — no .js/.jsx files
+1. **JavaScript** for frontend — .js/.jsx files (for cleaner diffs against upstream repo)
 2. **KARPATHY.md rules** — minimum code, no speculative features, surgical changes
 3. **Pin dependencies** exactly as specified in the engineering handoff
 4. **Sync PyMongo** — keep the existing synchronous pattern (not Motor/async)

@@ -1,23 +1,14 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import type { SegmentBoundary, FeedbackEntry } from '../types';
 
-interface VideoTimelineProps {
-  videoPath: string;
-  segmentBoundaries: SegmentBoundary[];
-  feedback: FeedbackEntry[];
-  onTimeUpdate: (time: number) => void;
-  seekTo?: number;
-}
-
-const VideoTimeline: React.FC<VideoTimelineProps> = ({
+const VideoTimeline = ({
   videoPath,
   segmentBoundaries,
   feedback,
   onTimeUpdate,
   seekTo,
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef(null);
+  const timelineRef = useRef(null);
 
   // Seek when seekTo changes
   useEffect(() => {
@@ -33,11 +24,11 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
     }
   }, [onTimeUpdate]);
 
-  const getDuration = (): number => {
+  const getDuration = () => {
     return videoRef.current?.duration || 1;
   };
 
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleTimelineClick = (e) => {
     if (!timelineRef.current || !videoRef.current) return;
     const rect = timelineRef.current.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
@@ -45,7 +36,7 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
     videoRef.current.currentTime = time;
   };
 
-  const handleSegmentClick = (start: number) => {
+  const handleSegmentClick = (start) => {
     if (videoRef.current) {
       videoRef.current.currentTime = start;
       videoRef.current.play().catch(() => {});
@@ -176,13 +167,13 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
   );
 };
 
-function formatTime(seconds: number): string {
+function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     background: 'rgba(10,10,10,0.7)',
     border: '1px solid rgba(255,255,255,0.1)',

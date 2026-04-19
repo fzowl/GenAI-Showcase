@@ -9,31 +9,26 @@ import StyleReferenceUpload from '../components/StyleReferenceUpload';
 import CutListPanel from '../components/CutListPanel';
 import PublishButton from '../components/PublishButton';
 import MemorySidebar from '../components/MemorySidebar';
-import type {
-  Project, FeedbackEntry, StyleMemory, ProjectMemory,
-  SearchResult, ConflictInfo, AgentMessage, SuggestedClip,
-  StyleReference,
-} from '../types';
 
-const ProjectWorkspace: React.FC = () => {
-  const { projectId } = useParams<{ projectId: string }>();
+const ProjectWorkspace = () => {
+  const { projectId } = useParams();
   const navigate = useNavigate();
 
   // Core state
-  const [project, setProject] = useState<Project | null>(null);
-  const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
-  const [styleMemory, setStyleMemory] = useState<StyleMemory | null>(null);
-  const [projectMemory, setProjectMemory] = useState<ProjectMemory | null>(null);
+  const [project, setProject] = useState(null);
+  const [feedback, setFeedback] = useState([]);
+  const [styleMemory, setStyleMemory] = useState(null);
+  const [projectMemory, setProjectMemory] = useState(null);
 
   // UI state
   const [currentTime, setCurrentTime] = useState(0);
-  const [seekTarget, setSeekTarget] = useState<number | undefined>(undefined);
-  const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
+  const [seekTarget, setSeekTarget] = useState(undefined);
+  const [conflicts, setConflicts] = useState([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsRef = useRef(null);
 
   // Load workspace data
   useEffect(() => {
@@ -68,15 +63,15 @@ const ProjectWorkspace: React.FC = () => {
     const ws = projectApi.createAgentWebSocket(projectId);
     wsRef.current = ws;
 
-    ws.onmessage = (event: MessageEvent) => {
+    ws.onmessage = (event) => {
       try {
-        const msg: AgentMessage = JSON.parse(event.data);
+        const msg = JSON.parse(event.data);
         if (msg.type === 'clip') {
           setProject((prev) => {
             if (!prev) return prev;
             const cuts = prev.recommended_cuts || [];
             const exists = cuts.some(
-              (c: SuggestedClip) => c.clip_id === msg.data.clip_id
+              (c) => c.clip_id === msg.data.clip_id
             );
             if (exists) return prev;
             return {
@@ -105,31 +100,31 @@ const ProjectWorkspace: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  const handleResultSelect = useCallback((result: SearchResult) => {
+  const handleResultSelect = useCallback((result) => {
     setSeekTarget(result.timestamp);
   }, []);
 
-  const handleTimeUpdate = useCallback((time: number) => {
+  const handleTimeUpdate = useCallback((time) => {
     setCurrentTime(time);
   }, []);
 
-  const handleFeedbackSeek = useCallback((time: number) => {
+  const handleFeedbackSeek = useCallback((time) => {
     setSeekTarget(time);
   }, []);
 
   const handleFeedbackSubmitted = useCallback(
-    (newFeedback: FeedbackEntry) => {
+    (newFeedback) => {
       setFeedback((prev) => [...prev, newFeedback]);
     },
     []
   );
 
-  const handleStyleUploaded = useCallback((style: StyleReference) => {
+  const handleStyleUploaded = useCallback((style) => {
     setProject((prev) => (prev ? { ...prev, style_reference: style } : prev));
   }, []);
 
   const handleCutUpdated = useCallback(
-    (clipId: string, updates: Partial<SuggestedClip>) => {
+    (clipId, updates) => {
       setProject((prev) => {
         if (!prev) return prev;
         return {
@@ -143,7 +138,7 @@ const ProjectWorkspace: React.FC = () => {
     []
   );
 
-  const handleSeekTo = useCallback((time: number) => {
+  const handleSeekTo = useCallback((time) => {
     setSeekTarget(time);
   }, []);
 
@@ -255,7 +250,7 @@ const ProjectWorkspace: React.FC = () => {
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   page: {
     minHeight: '100vh',
     padding: '20px',

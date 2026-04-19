@@ -1,17 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { projectApi } from '../services/api';
-import type { StyleReference } from '../types';
-
-interface StyleReferenceUploadProps {
-  projectId: string;
-  currentReference?: StyleReference;
-  onStyleUploaded: (style: StyleReference) => void;
-}
 
 const ACCEPTED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
 const ACCEPTED_EXT = '.mp4,.mov,.webm';
 
-const StyleReferenceUpload: React.FC<StyleReferenceUploadProps> = ({
+const StyleReferenceUpload = ({
   projectId,
   currentReference,
   onStyleUploaded,
@@ -19,10 +12,10 @@ const StyleReferenceUpload: React.FC<StyleReferenceUploadProps> = ({
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState(null);
+  const inputRef = useRef(null);
 
-  const handleFile = async (file: File) => {
+  const handleFile = async (file) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
       setError('Please upload a video file (.mp4, .mov, .webm)');
       return;
@@ -57,14 +50,14 @@ const StyleReferenceUpload: React.FC<StyleReferenceUploadProps> = ({
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
     setDragOver(true);
   };
@@ -73,7 +66,7 @@ const StyleReferenceUpload: React.FC<StyleReferenceUploadProps> = ({
     setDragOver(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
   };
@@ -153,7 +146,7 @@ const StyleReferenceUpload: React.FC<StyleReferenceUploadProps> = ({
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     background: 'rgba(10,10,10,0.7)',
     border: '1px solid rgba(255,255,255,0.1)',
