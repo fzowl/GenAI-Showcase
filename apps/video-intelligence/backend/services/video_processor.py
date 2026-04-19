@@ -8,6 +8,8 @@ from typing import Any, Callable, Dict, List, Optional
 import cv2
 from PIL import Image
 
+from services.audio_service import audio_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,6 +26,28 @@ class VideoProcessor:
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.frames_dir.mkdir(parents=True, exist_ok=True)
         self.frontend_videos_dir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _match_transcript_to_frame(
+        timestamp: float, segments: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """Find the audio segment covering a frame's timestamp.
+
+        Returns dict with transcript, transcript_summary, and speaker_label.
+        """
+        for seg in segments:
+            if seg["start"] <= timestamp < seg["end"]:
+                return {
+                    "transcript": seg.get("text", ""),
+                    "transcript_summary": seg.get("transcript_summary", ""),
+                    "speaker_label": seg.get("speaker", "SPEAKER_00"),
+                }
+        # No matching segment — return empty values
+        return {
+            "transcript": "",
+            "transcript_summary": "",
+            "speaker_label": "",
+        }
 
     async def process_video(
         self,
@@ -93,9 +117,33 @@ class VideoProcessor:
                     }
                 )
 
+            # Process audio pipeline (extract, transcribe, summarize)
+            try:
+                audio_result = await audio_service.process_full_audio(
+                    str(video_path), video_id
+                )
+                audio_segments = audio_result.get("segments", [])
+                video_metadata["segment_boundaries"] = [
+                    {"start": s["start"], "end": s["end"], "speaker": s["speaker"]}
+                    for s in audio_segments
+                ]
+                logger.info(
+                    f"Audio processing complete: {len(audio_segments)} segments"
+                )
+            except Exception as e:
+                logger.error(f"Audio processing failed, continuing without: {e}")
+                audio_segments = []
+                video_metadata["segment_boundaries"] = []
+
             # Extract frames with progressive ingestion
             frames_data = await self._extract_frames_with_progress(
-                cap, video_id, fps, progress_callback, mongodb_service, ai_service
+                cap,
+                video_id,
+                fps,
+                progress_callback,
+                mongodb_service,
+                ai_service,
+                audio_segments=audio_segments,
             )
 
             cap.release()
@@ -136,6 +184,7 @@ class VideoProcessor:
         progress_callback: Optional[Callable] = None,
         mongodb_service=None,
         ai_service=None,
+        audio_segments: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
         """Extract frames from video with progress updates and progressive ingestion"""
         frames_data = []
@@ -187,11 +236,19 @@ class VideoProcessor:
                 thumbnail_path = video_frames_dir / f"thumb_{extracted_frames:06d}.jpg"
                 thumbnail.save(thumbnail_path, "JPEG", quality=85)
 
+                # Match transcript data to this frame's timestamp
+                transcript_match = self._match_transcript_to_frame(
+                    timestamp, audio_segments or []
+                )
+
                 frame_data = {
                     "frame_number": extracted_frames,
                     "timestamp": timestamp,
                     "file_path": str(frame_path),
                     "thumbnail_path": str(thumbnail_path),
+                    "transcript": transcript_match["transcript"],
+                    "transcript_summary": transcript_match["transcript_summary"],
+                    "speaker_label": transcript_match["speaker_label"],
                     "metadata": {
                         "width": frame.shape[1],
                         "height": frame.shape[0],

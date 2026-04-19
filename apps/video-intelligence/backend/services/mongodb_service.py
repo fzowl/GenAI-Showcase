@@ -18,10 +18,22 @@ class MongoDBService:
         self.db: Optional[Database] = None
         self.frame_collection: Optional[Collection] = None
         self.video_collection: Optional[Collection] = None
+        self.projects_collection: Optional[Collection] = None
+        self.feedback_collection: Optional[Collection] = None
+        self.style_memory_collection: Optional[Collection] = None
+        self.content_memory_collection: Optional[Collection] = None
+        self.project_memory_collection: Optional[Collection] = None
+        self.published_clips_collection: Optional[Collection] = None
 
         # Collection names
         self.FRAME_COLLECTION = "frame_intelligence"
         self.VIDEO_COLLECTION = "video_metadata"
+        self.PROJECTS_COLLECTION = "projects"
+        self.FEEDBACK_COLLECTION = "stakeholder_feedback"
+        self.STYLE_MEMORY_COLLECTION = "style_memory"
+        self.CONTENT_MEMORY_COLLECTION = "content_memory"
+        self.PROJECT_MEMORY_COLLECTION = "project_memory"
+        self.PUBLISHED_CLIPS_COLLECTION = "published_clips"
 
         # Get embedding dimensions from environment variable
         self.EMBEDDING_DIM_SIZE = int(os.getenv("EMBEDDING_DIM_SIZE", "1024"))
@@ -51,6 +63,12 @@ class MongoDBService:
             # Get collections
             self.frame_collection = self.db[self.FRAME_COLLECTION]
             self.video_collection = self.db[self.VIDEO_COLLECTION]
+            self.projects_collection = self.db[self.PROJECTS_COLLECTION]
+            self.feedback_collection = self.db[self.FEEDBACK_COLLECTION]
+            self.style_memory_collection = self.db[self.STYLE_MEMORY_COLLECTION]
+            self.content_memory_collection = self.db[self.CONTENT_MEMORY_COLLECTION]
+            self.project_memory_collection = self.db[self.PROJECT_MEMORY_COLLECTION]
+            self.published_clips_collection = self.db[self.PUBLISHED_CLIPS_COLLECTION]
 
             # Ensure indexes exist
             await self.ensure_indexes()
@@ -649,6 +667,236 @@ class MongoDBService:
         except Exception as e:
             logger.error(f"Fallback search failed: {e}")
             return []
+
+    # --- Projects ---
+
+    async def get_all_projects(self) -> List[Dict]:
+        """Return all projects sorted by status (in_progress first, then published)"""
+        try:
+            # Custom sort: in_progress=0, draft=1, published=2
+            pipeline = [
+                {
+                    "$addFields": {
+                        "_sort_order": {
+                            "$switch": {
+                                "branches": [
+                                    {"case": {"$eq": ["$status", "in_progress"]}, "then": 0},
+                                    {"case": {"$eq": ["$status", "draft"]}, "then": 1},
+                                ],
+                                "default": 2,
+                            }
+                        }
+                    }
+                },
+                {"$sort": {"_sort_order": 1}},
+                {"$project": {"_sort_order": 0, "_id": 0}},
+            ]
+            results = list(self.projects_collection.aggregate(pipeline))
+            return results
+        except Exception as e:
+            logger.error(f"Failed to get all projects: {e}")
+            return []
+
+    async def get_project(self, project_id: str) -> Optional[Dict]:
+        """Get a single project document"""
+        try:
+            result = self.projects_collection.find_one(
+                {"project_id": project_id}, {"_id": 0}
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Failed to get project {project_id}: {e}")
+            return None
+
+    async def create_project(self, project: Dict) -> str:
+        """Insert a new project"""
+        try:
+            project["created_at"] = datetime.utcnow()
+            self.projects_collection.insert_one(project)
+            logger.info(f"Created project: {project['project_id']}")
+            return project["project_id"]
+        except Exception as e:
+            logger.error(f"Failed to create project: {e}")
+            raise
+
+    async def update_project(self, project_id: str, updates: Dict):
+        """Update project fields"""
+        try:
+            self.projects_collection.update_one(
+                {"project_id": project_id}, {"$set": updates}
+            )
+            logger.info(f"Updated project: {project_id}")
+        except Exception as e:
+            logger.error(f"Failed to update project {project_id}: {e}")
+            raise
+
+    # --- Feedback ---
+
+    async def get_feedback_for_project(self, project_id: str) -> List[Dict]:
+        """All feedback sorted by timestamp_range.start"""
+        try:
+            results = list(
+                self.feedback_collection.find(
+                    {"project_id": project_id}, {"_id": 0}
+                ).sort("timestamp_range.start", 1)
+            )
+            return results
+        except Exception as e:
+            logger.error(f"Failed to get feedback for project {project_id}: {e}")
+            return []
+
+    async def get_feedback_at_timestamp(self, project_id: str, timestamp: float) -> List[Dict]:
+        """Feedback entries whose timestamp_range covers the given timestamp"""
+        try:
+            results = list(
+                self.feedback_collection.find(
+                    {
+                        "project_id": project_id,
+                        "timestamp_range.start": {"$lte": timestamp},
+                        "timestamp_range.end": {"$gte": timestamp},
+                    },
+                    {"_id": 0},
+                )
+            )
+            return results
+        except Exception as e:
+            logger.error(f"Failed to get feedback at timestamp {timestamp}: {e}")
+            return []
+
+    async def insert_feedback(self, feedback: Dict) -> str:
+        """Insert a feedback entry"""
+        try:
+            feedback["created_at"] = datetime.utcnow()
+            self.feedback_collection.insert_one(feedback)
+            logger.info(f"Inserted feedback: {feedback.get('feedback_id')}")
+            return feedback.get("feedback_id", "")
+        except Exception as e:
+            logger.error(f"Failed to insert feedback: {e}")
+            raise
+
+    # --- Style Memory ---
+
+    async def get_style_memory(self, user_id: str) -> Optional[Dict]:
+        """Get style memory for a user (keyed by user_id — cross-project)"""
+        try:
+            result = self.style_memory_collection.find_one(
+                {"user_id": user_id}, {"_id": 0}
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Failed to get style memory for {user_id}: {e}")
+            return None
+
+    async def upsert_style_memory(self, user_id: str, updates: Dict):
+        """Upsert style memory document"""
+        try:
+            self.style_memory_collection.update_one(
+                {"user_id": user_id}, {"$set": updates}, upsert=True
+            )
+            logger.info(f"Upserted style memory for {user_id}")
+        except Exception as e:
+            logger.error(f"Failed to upsert style memory for {user_id}: {e}")
+            raise
+
+    # --- Project Memory ---
+
+    async def get_project_memory(self, campaign_id: str) -> Optional[Dict]:
+        """Get project memory by campaign_id"""
+        try:
+            result = self.project_memory_collection.find_one(
+                {"campaign_id": campaign_id}, {"_id": 0}
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Failed to get project memory for {campaign_id}: {e}")
+            return None
+
+    # --- Content Memory ---
+
+    async def search_content_memory(
+        self, embedding: List[float], threshold: float = 0.85, top_k: int = 5
+    ) -> List[Dict]:
+        """Vector search against content_memory to find similar previously published clips.
+        Uses content_vector_idx (dotProduct on embedding field, 1024d voyage-4 space).
+        Returns entries with similarity > threshold."""
+        try:
+            pipeline = [
+                {
+                    "$vectorSearch": {
+                        "index": "content_vector_idx",
+                        "path": "embedding",
+                        "queryVector": embedding,
+                        "numCandidates": top_k * 10,
+                        "limit": top_k,
+                    }
+                },
+                {
+                    "$addFields": {
+                        "similarity_score": {"$meta": "vectorSearchScore"},
+                    }
+                },
+                {"$match": {"similarity_score": {"$gte": threshold}}},
+                {"$project": {"_id": 0, "embedding": 0}},
+            ]
+            results = list(self.content_memory_collection.aggregate(pipeline))
+            logger.info(f"Content memory search returned {len(results)} results")
+            return results
+        except Exception as e:
+            logger.error(f"Content memory search failed: {e}")
+            return []
+
+    async def insert_content_memory(self, clip_doc: Dict) -> str:
+        """Insert a published clip into content_memory"""
+        try:
+            self.content_memory_collection.insert_one(clip_doc)
+            logger.info(f"Inserted content memory: {clip_doc.get('clip_id')}")
+            return clip_doc.get("clip_id", "")
+        except Exception as e:
+            logger.error(f"Failed to insert content memory: {e}")
+            raise
+
+    # --- Published Clips ---
+
+    async def insert_published_clips(self, clips: List[Dict]):
+        """Batch insert published clips"""
+        try:
+            if clips:
+                self.published_clips_collection.insert_many(clips)
+                logger.info(f"Inserted {len(clips)} published clips")
+        except Exception as e:
+            logger.error(f"Failed to insert published clips: {e}")
+            raise
+
+    # --- Compound Read ---
+
+    async def load_project_workspace(self, project_id: str) -> Dict:
+        """Single compound read that returns project, feedback, style_memory, and project_memory.
+        Uses asyncio.gather for parallel I/O on the sub-queries."""
+        import asyncio
+
+        project = await self.get_project(project_id)
+        if not project:
+            return {}
+
+        campaign_id = project.get("campaign_id", "")
+
+        async def _noop():
+            return None
+
+        feedback_task = self.get_feedback_for_project(project_id)
+        style_task = self.get_style_memory("editor_mikiko")
+        project_mem_task = self.get_project_memory(campaign_id) if campaign_id else _noop()
+
+        feedback, style_memory, project_memory = await asyncio.gather(
+            feedback_task, style_task, project_mem_task
+        )
+
+        return {
+            "project": project,
+            "feedback": feedback,
+            "style_memory": style_memory,
+            "project_memory": project_memory,
+        }
 
     async def disconnect(self):
         """Close MongoDB connection"""
