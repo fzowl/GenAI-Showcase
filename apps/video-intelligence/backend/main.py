@@ -31,6 +31,12 @@ from services.ai_service import ai_service
 from services.mongodb_service import mongodb_service
 from services.video_processor import video_processor
 
+# SMCEA service routers
+from services.project_service import router as project_router
+from services.style_ref_service import router as style_ref_router
+from services.feedback_service import router as feedback_router
+from services.publish_service import router as publish_router
+
 # Load environment variables
 load_dotenv()
 
@@ -45,7 +51,9 @@ async def lifespan(app: FastAPI):
     # Startup
     try:
         await mongodb_service.connect()
-        logger.info("Application startup completed")
+        # Warm the connection pool with a lightweight read
+        await mongodb_service.get_all_projects()
+        logger.info("Application startup completed (connection pool warmed)")
     except Exception as e:
         logger.warning(f"MongoDB connection failed during startup: {e}")
         logger.info(
@@ -92,7 +100,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:3000")],
+    allow_origins=[
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),
+        "http://localhost:3001",
+        "http://localhost:3002",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -103,12 +115,23 @@ frames_dir = Path(os.getenv("FRAMES_DIR", "frames"))
 if frames_dir.exists():
     app.mount("/frames", StaticFiles(directory=frames_dir), name="frames")
 
+# Serve uploaded videos for playback
+uploads_dir = Path(os.getenv("UPLOAD_DIR", "uploads"))
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
 # Serve videos from frontend directory
 frontend_videos_dir = Path(
     os.getenv("FRONTEND_VIDEOS_DIR", "../frontend/public/videos")
 )
 if frontend_videos_dir.exists():
     app.mount("/api/videos", StaticFiles(directory=frontend_videos_dir), name="videos")
+
+# Include SMCEA routers
+app.include_router(project_router)
+app.include_router(style_ref_router)
+app.include_router(feedback_router)
+app.include_router(publish_router)
 
 
 # Global connection manager for WebSocket connections
@@ -316,9 +339,6 @@ async def process_video_async(video_id: str):
         # No need to update status separately since it's included in metadata
         logger.info(f"Video metadata inserted successfully for video {video_id}")
 
-        # Cleanup video file (keep frames)
-        video_path.unlink()
-
         # Final success message
         await manager.send_progress(
             video_id,
@@ -477,6 +497,30 @@ async def get_frame(video_id: str, frame_name: str):
     except Exception as e:
         logger.error(f"Failed to serve frame: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.websocket("/ws/agent/{project_id}")
+async def agent_websocket(websocket: WebSocket, project_id: str):
+    """WebSocket for streaming agent cut generation results"""
+    await websocket.accept()
+    try:
+        from services.agent_service import stream_cuts_to_websocket
+
+        await stream_cuts_to_websocket(websocket, project_id)
+        # Keep alive until client disconnects
+        while True:
+            try:
+                await websocket.receive_text()
+            except WebSocketDisconnect:
+                break
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.error(f"Agent WebSocket error: {e}")
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

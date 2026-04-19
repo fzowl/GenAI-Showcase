@@ -1,0 +1,28 @@
+# Dependencies
+frontend/node_modules/
+backend/__pycache__/
+backend/services/__pycache__/
+backend/models/__pycache__/
+backend/scripts/__pycache__/
+
+# Environment (contains API keys)
+.env
+backend/.env
+
+# Uploaded files
+backend/uploads/*.mp4
+backend/uploads/*.wav
+backend/uploads/*.webm
+
+# Frames
+backend/frames/
+
+# Build
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

@@ -1,3 +1,8 @@
 .ipynb_checkpoints
 **/.DS_Store
 apps/video-intelligence/frontend/public/videos/*.mp4
+
+# Video intelligence app
+apps/video-intelligence/backend/.env
+apps/video-intelligence/backend/uploads/*.mp4
+apps/video-intelligence/frontend/node_modules/
