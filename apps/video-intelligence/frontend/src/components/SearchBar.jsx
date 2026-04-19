@@ -60,7 +60,7 @@ const SearchBar = ({ projectId, onResultSelect }) => {
               }}
             >
               <img
-                src={projectApi.getFrameUrl(result.thumbnail_path)}
+                src={projectApi.getFrameUrl(result.thumbnail_path || result.file_path || '')}
                 alt={result.description}
                 style={styles.thumb}
                 onError={(e) => {
@@ -73,7 +73,7 @@ const SearchBar = ({ projectId, onResultSelect }) => {
                   {(result.similarity_score * 100).toFixed(0)}%
                 </span>
               </div>
-              <div style={styles.thumbDesc}>{result.description}</div>
+              <div style={styles.thumbDesc} title={result.description}>{result.description}</div>
             </div>
           ))}
         </div>

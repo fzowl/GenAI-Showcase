@@ -183,8 +183,8 @@ async def debug_search(request: Request):
 
 
 @app.post("/upload", response_model=UploadResponse)
-async def upload_video(file: UploadFile = File(...)):
-    """Upload and process a video file"""
+async def upload_video(file: UploadFile = File(...), project_id: str = None):
+    """Upload and process a video file. Optionally link to a project."""
     try:
         # Validate file
         if not file.filename:
@@ -226,6 +226,14 @@ async def upload_video(file: UploadFile = File(...)):
         logger.info(
             f"Video uploaded: {video_id}, size: {len(content)} bytes ({len(content) / (1024*1024):.1f}MB)"
         )
+
+        # Link to project if project_id provided
+        if project_id:
+            await mongodb_service.update_project(
+                project_id,
+                {"video_id": video_id, "video_path": f"uploads/{video_id}{file_extension}"},
+            )
+            logger.info(f"Linked video {video_id} to project {project_id}")
 
         # Return immediately, processing will happen via WebSocket
         return UploadResponse(
