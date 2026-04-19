@@ -93,8 +93,10 @@ async def publish_clips(project_id: str, request: PublishRequest):
     # 2-3. Embed hook_text and insert into content_memory
     for clip in approved_clips:
         caption = clip.get("suggested_caption", {})
-        # Use linkedin caption as hook_text (primary platform)
-        hook_text = caption.get("linkedin", "") if isinstance(caption, dict) else str(caption)
+        # Use first non-null caption as hook_text
+        hook_text = (
+            caption.get("linkedin") or caption.get("reels") or caption.get("twitter") or ""
+        ) if isinstance(caption, dict) else str(caption)
         embedding = await _embed_text(hook_text)
 
         content_doc = {

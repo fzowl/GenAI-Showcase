@@ -309,7 +309,7 @@ async def trigger_regeneration(project_id: str) -> Dict[str, Any]:
         None,
         lambda: client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=4096,
+            max_tokens=8192,
             system=[
                 {
                     "type": "text",
@@ -324,11 +324,33 @@ async def trigger_regeneration(project_id: str) -> Dict[str, Any]:
     # Parse response
     raw_text = response.content[0].text
     # Strip markdown fences if present
-    if raw_text.startswith("```"):
-        raw_text = raw_text.split("\n", 1)[1]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[: raw_text.rfind("```")]
-    result = json.loads(raw_text)
+    if "```" in raw_text:
+        # Extract content between first ``` and last ```
+        start = raw_text.find("```")
+        first_newline = raw_text.find("\n", start)
+        end = raw_text.rfind("```")
+        if first_newline != -1 and end > first_newline:
+            raw_text = raw_text[first_newline + 1 : end]
+        elif first_newline != -1:
+            raw_text = raw_text[first_newline + 1 :]
+
+    # Handle truncated JSON — try to repair by closing open structures
+    try:
+        result = json.loads(raw_text)
+    except json.JSONDecodeError as e:
+        logger.warning(f"JSON parse failed ({e}), attempting repair")
+        # Try adding closing brackets/braces
+        repaired = raw_text.rstrip().rstrip(",")
+        for closer in ['}]}\n', '"}]}\n', '"]}\n']:
+            try:
+                result = json.loads(repaired + closer)
+                logger.info("JSON repair succeeded")
+                break
+            except json.JSONDecodeError:
+                continue
+        else:
+            logger.error(f"JSON repair failed. Raw text (last 200 chars): {raw_text[-200:]}")
+            raise ValueError(f"Could not parse Claude response as JSON: {e}")
 
     # 9. Update style_memory.feedback_patterns
     patterns = result.get("feedback_patterns", [])

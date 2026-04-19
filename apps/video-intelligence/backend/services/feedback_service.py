@@ -67,17 +67,21 @@ async def submit_feedback(project_id: str, feedback: FeedbackSubmission):
 
     await mongodb_service.insert_feedback(entry.model_dump())
 
-    # Auto-trigger agent re-generation (import here to avoid circular imports)
+    # Auto-trigger agent re-generation in background (don't block the HTTP response)
+    import asyncio
     from services.agent_service import trigger_regeneration
 
-    try:
-        result = await trigger_regeneration(project_id)
-    except Exception as e:
-        logger.error(f"Agent re-generation failed after feedback: {e}")
-        result = None
+    async def _run_regen():
+        try:
+            await trigger_regeneration(project_id)
+            logger.info(f"Agent re-generation completed for {project_id}")
+        except Exception as e:
+            logger.error(f"Agent re-generation failed after feedback: {e}")
+
+    asyncio.create_task(_run_regen())
 
     return {
         "feedback_id": feedback_id,
         "timestamp_range": ts_range,
-        "regeneration_triggered": result is not None,
+        "regeneration_triggered": True,
     }

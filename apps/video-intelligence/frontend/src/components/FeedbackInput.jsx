@@ -32,7 +32,14 @@ const FeedbackInput = ({
         playhead_time: currentTime,
       });
       setComment('');
-      onFeedbackSubmitted(result);
+      onFeedbackSubmitted({
+        feedback_id: result.feedback_id,
+        project_id: projectId,
+        timestamp_range: result.timestamp_range,
+        author,
+        comment_text: comment.trim(),
+        created_at: new Date().toISOString(),
+      });
     } catch (err) {
       console.error('Failed to submit feedback:', err);
     } finally {
